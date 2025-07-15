@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import {prisma} from "@/lib/db";
 
-export default function Home() {
+export default async function Home() {
   return (
     <>
       <Button variant={"outline"} > Hii There </Button>
