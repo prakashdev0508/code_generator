@@ -1,7 +1,15 @@
-import { gemini, openai, createAgent } from "@inngest/agent-kit";
+import {
+  gemini,
+  openai,
+  createAgent,
+  createTool,
+  createNetwork,
+} from "@inngest/agent-kit";
 import { inngest } from "./client";
 import { Sandbox } from "@e2b/code-interpreter";
-import { getSandBox } from "./utils";
+import { getSandBox, lastAssistanceMessage } from "./utils";
+import z from "zod";
+import { PROMPT } from "./prompt";
 
 export const helloWorld = inngest.createFunction(
   { id: "hello-world" },
@@ -13,18 +21,121 @@ export const helloWorld = inngest.createFunction(
     });
 
     const writer = createAgent({
-      name: "Code writer ",
-      system:
-        "You are an expert nextjs and reactjs code snippet writer. Write code that is clean, efficient, and follows best practices and with good ui using tailwind css classes if reqiured of styling. Always give only one code snippet in response which is best with no explanation just code snippet .",
-      model: gemini({ model: "gemini-1.5-flash" }),
+      name: "code-agent ",
+      description: "An Expert Coding agent",
+      system: `${PROMPT}`,
+      model: openai({
+        model: "gpt-4o",
+        defaultParameters: {
+          temperature: 0.1,
+        },
+      }),
+      tools: [
+        createTool({
+          name: "terminal",
+          description: "Use theterminal to run commands in the sandbox",
+
+          handler: async ({ command }, { step }) => {
+            return step?.run("terminal", async () => {
+              const buffers = { stdout: "", stderr: "" };
+              try {
+                const sandbox = await getSandBox(sandboxId);
+                const result = await sandbox.commands.run(command, {
+                  onStdout: (data) => {
+                    buffers.stdout += data.toString();
+                  },
+                  onStderr: (data) => {
+                    buffers.stderr += data.toString();
+                  },
+                });
+                return result.stdout;
+              } catch (e) {
+                console.error(
+                  `Error running command: ${e} \nstdout: ${buffers.stdout} \nstderr: ${buffers.stderr}`
+                );
+
+                return `Error running command: ${e} \nstdout: ${buffers.stdout} \nstderr: ${buffers.stderr}`;
+              }
+            });
+          },
+        }),
+        createTool({
+          name: "createOrUpdateFile",
+          description: "Create or update a file in the sandbox",
+          handler: async ({ files }, { step, network }) => {
+            const newFiles = await step?.run("createOrUpdateFile", async () => {
+              try {
+                const updateFiles = network.state.data.files || {};
+
+                const sandbox = await getSandBox(sandboxId);
+                for (const file of files) {
+                  await sandbox.files.write(file.path, file.content);
+                  updateFiles[file.path] = file.content;
+                }
+
+                return updateFiles;
+              } catch (e) {
+                return `Error : ${e}`;
+              }
+            });
+            if (typeof newFiles === "object") {
+              return (network.state.data.files = newFiles);
+            }
+          },
+        }),
+        createTool({
+          name: "readfiles",
+          description: "Read files from the sandbox",
+
+          handler: async ({ files }, { step, network }) => {
+            return step?.run("readfiles", async () => {
+              try {
+                const sandbox = await getSandBox(sandboxId);
+                const content = [];
+
+                for (const file of files) {
+                  const fileContent = await sandbox.files.read(file);
+                  content.push({ path: file, content: fileContent });
+                }
+                return JSON.stringify(content);
+              } catch (e) {
+                return `Error : ${e}`;
+              }
+            });
+          },
+        }),
+      ],
+      lifecycle: {
+        onResponse: async ({ result, network }) => {
+          const lastAssistanceMessageText = lastAssistanceMessage(result);
+
+          if (lastAssistanceMessageText && network) {
+            if (lastAssistanceMessageText.includes("<task_summary>")) {
+              network.state.data.summary = lastAssistanceMessageText;
+            }
+          }
+
+          return result;
+        },
+      },
     });
 
-    // Run the agent with an input.  This automatically uses steps
-    // to call your AI model.
-    const { output } = await writer.run(
-      `Wirte the code for: ${event.data.email}`
-    );
+    const network = createNetwork({
+      name: "code-agent",
+      agents: [writer],
+      maxIter: 15,
+      router: async ({ network }) => {
+        const summary = network.state.data.summary;
 
+        if (summary) {
+          return;
+        }
+
+        return writer;
+      },
+    });
+    // to call your AI model.
+    const result = await network.run(event.data.value);
     const sandBoxURl = await step.run("get-sandbox-url", async () => {
       const sandbox = await getSandBox(sandboxId);
       const host = sandbox.getHost(3000);
@@ -32,8 +143,11 @@ export const helloWorld = inngest.createFunction(
       return `http://${host}`;
     });
 
-
-
-    return { message: output[0] , sandboxId, sandBoxURl  };
+    return {
+      url: sandBoxURl,
+      title: "Code Generation Result",
+      summary: result.state.data.summary,
+      files: result.state.data.files || {},
+    };
   }
 );

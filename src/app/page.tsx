@@ -33,7 +33,7 @@ export default function Home() {
       />
       <Button
         disabled={invoke.isPending}
-        onClick={() => invoke.mutate({ email: value })}
+        onClick={() => invoke.mutate({ value: value })}
       >
         {" "}
         {invoke.isPending
