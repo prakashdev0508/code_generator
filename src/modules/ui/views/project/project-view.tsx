@@ -8,22 +8,17 @@ import {
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import MessagesContainer from "../../components/MessagesContainer";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { Fragment } from "@/generated/prisma";
+import ProjectHeader from "../../components/ProjectHeader";
+import FragmentWeb from "../../components/FragmentWeb";
 
 interface Props {
   projectId: string;
 }
 
 const ProjectView = ({ projectId }: Props) => {
-  const trpc = useTRPC();
-
-  const { data: project, error: projectError } = useSuspenseQuery(
-    trpc.project.getOne.queryOptions({
-      projectId,
-    })
-  );
-
-
+  const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
 
   return (
     <div className="h-screen">
@@ -33,8 +28,15 @@ const ProjectView = ({ projectId }: Props) => {
           minSize={20}
           className="flex flex-col min-h-0"
         >
+          <Suspense fallback={<div>Loading Project...</div>}>
+            <ProjectHeader projectId={projectId} />
+          </Suspense>
           <Suspense fallback={<div>Loading ...</div>}>
-            <MessagesContainer projectId={projectId} />
+            <MessagesContainer
+              projectId={projectId}
+              activeFragment={activeFragment}
+              setActiveFragment={setActiveFragment}
+            />
           </Suspense>
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -43,11 +45,9 @@ const ProjectView = ({ projectId }: Props) => {
           minSize={50}
           className="flex flex-col min-h-0"
         >
-          {projectError ? (
-              <div>Error</div>
-            ) : (
-              <div>{JSON.stringify(project)}</div>
-          )}
+          {activeFragment && 
+            <FragmentWeb  data={activeFragment} /> 
+          }
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

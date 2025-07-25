@@ -91,7 +91,9 @@ const AssistantMessage = ({
         </span>
       </div>
       <div className="flex flex-col gap-2 ml-3">
-        <span className="ml-3">{content}</span>
+        <span className="ml-3">
+          {content.replace(/<\/?task_summary>/g, "\n")}
+        </span>{" "}
         <span>
           {fragments && type === "RESULT" && (
             <div className="ml-2 mt-1">
