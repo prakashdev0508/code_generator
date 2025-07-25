@@ -28,7 +28,6 @@ const FragmentWeb = ({ data }: { data: Fragment }) => {
           </Button>
         </Hint>
 
-        <Hint text="Copy to clipboard" side="bottom" align="center">
           <Button
             variant={"outline"}
             size={"sm"}
@@ -38,7 +37,6 @@ const FragmentWeb = ({ data }: { data: Fragment }) => {
           >
             <span className=" truncate ">{data?.sandboxUrl}</span>
           </Button>
-        </Hint>
         <Hint text="Open in new tab" side="bottom" align="start">
           <Button
             variant={"outline"}
