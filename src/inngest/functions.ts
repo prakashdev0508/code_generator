@@ -157,6 +157,7 @@ export const codeAgent = inngest.createFunction(
           content: isError ? "Something went wrong please try again" : result.state.data.summary,
           role: "ASSISTANT",
           type: isError ? "ERROR" : "RESULT",
+          projectId: event.data.projectId,
           ...(!isError ? {
             fragments: {
               create: {
@@ -169,6 +170,7 @@ export const codeAgent = inngest.createFunction(
           } : {})
         }
       })
+      return true;
     })
 
     return {
