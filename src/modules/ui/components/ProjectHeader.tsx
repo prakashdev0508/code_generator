@@ -61,7 +61,7 @@ const ProjectHeader = ({ projectId }: { projectId: string }) => {
             <DropdownMenuItem asChild>
               <Link href={`/`}>
                 <ChevronLeftIcon />
-                <span>Back to Projects</span>
+                <span>Back to Home</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import React from "react";
 import { ChevronRightIcon, Code2Icon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const UserMessage = ({ content }: { content: string }) => {
   return (
@@ -35,9 +36,9 @@ const FragmentCard = ({
   onFragmentClick,
 }: FragmentCardProps) => {
   return (
-    <button
+    <Button
       className={cn(
-        "flex items-start gap-2 border rounded-lg bg-muted w-fit hover:bg-secondary p-2",
+        "flex items-start gap-2 border rounded-lg bg-muted w-fit hover:bg-secondary p-2 h-14",
         isFragmentActive &&
           "bg-primary text-primary-foreground border-primary hover:bg-primary/90"
       )}
@@ -53,7 +54,7 @@ const FragmentCard = ({
       <div className="flex items-center justify-center mt-0.5">
         <ChevronRightIcon className="size-4 mt-0.5 " />
       </div>
-    </button>
+    </Button>
   );
 };
 

@@ -31,7 +31,7 @@ export const projectRouter = createTRPCRouter({
     }),
 
     createProject: baseProcedure.input(z.object({
-        name: z.string().min(1, { message: "message is required" }).max(200, { message: "message must be less than 20 characters" }),
+        name: z.string().min(1, { message: "message is required" }).max(1000, { message: "message must be less than 20 characters" }),
     })).mutation(async ({ input }) => {
         const { name } = input;
 
